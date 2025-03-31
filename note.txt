@@ -1,0 +1,48 @@
+///// UpdateUser Operation : Check Differed data??
+if (true) {
+    // โค้ดในนี้จะทำงาน
+    console.log("เงื่อนไขเป็น true");
+}
+
+if (false) {
+    // โค้ดในนี้จะไม่ทำงาน
+    console.log("จะไม่เห็นข้อความนี้");
+}
+
+// ข้อมูลเดิมใน database
+const currentUser = {
+    firstName: "John",
+    lastName: "Doe",
+    email: "john@email.com"
+}
+
+// ข้อมูลที่ส่งมาใหม่
+const req.body = {
+    firstName: "John",    // เหมือนเดิม
+    lastName: "Smith",    // ต่างจากเดิม
+    email: "john@email.com"  // เหมือนเดิม
+}
+
+// ลองดูการทำงานของ loop
+for (const key in req.body) {
+    // รอบที่ 1: key = "firstName"
+    // req.body["firstName"] !== currentUser["firstName"]
+    // "John" !== "John" -> false
+    // ไม่เข้า if
+
+    // รอบที่ 2: key = "lastName"
+    // req.body["lastName"] !== currentUser["lastName"]
+    // "Smith" !== "Doe" -> true
+    // เข้า if
+    // updateData["lastName"] = "Smith"
+    // hasChanges = true
+
+    // รอบที่ 3: key = "email"
+    // req.body["email"] !== currentUser["email"]
+    // "john@email.com" !== "john@email.com" -> false
+    // ไม่เข้า if
+}
+
+// สรุป:
+// - hasChanges = true เพราะมี lastName ที่เปลี่ยนแปลง
+// - updateData = { lastName: "Smith" }

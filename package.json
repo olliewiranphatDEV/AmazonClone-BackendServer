@@ -1,0 +1,35 @@
+{
+  "name": "backend-server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "nodemon server.js",
+    "resetDB": "node prisma/resetDB.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
+  "dependencies": {
+    "@clerk/clerk-sdk-node": "^5.1.6",
+    "@clerk/express": "^1.3.49",
+    "@prisma/client": "^6.4.0",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "stripe": "^17.7.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.4.0"
+  }
+}

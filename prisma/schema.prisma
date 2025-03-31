@@ -1,0 +1,163 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  userID       Int       @id @default(autoincrement())
+  clerkID      String    @unique
+  role         Role      @default(CUSTOMER)
+  firstName    String    @db.VarChar(255)
+  lastName     String    @db.VarChar(255)
+  email        String?   @unique
+  phoneNumber  String?   @unique
+  address      String?   @db.VarChar(255)
+  imageUrl     String?
+  gender       String?   @db.VarChar(255)
+  birthday     DateTime? @db.Date //Tell DB keep only Date, no Time
+  createdAt    DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime  @updatedAt @db.Timestamp(0)
+  userStatus   Status    @default(ACTIVE)
+  merchantName String?   @unique @db.VarChar(255)
+  sellerStatus Status    @default(ACTIVE)
+
+  products    Product[] //Many products
+  Carts       Cart[]
+  Orders      Order[]
+  ReviewPosts ReviewPost[]
+}
+
+model Category {
+  categoryID Int    @id @default(autoincrement())
+  name       String @db.VarChar(255)
+
+  products Product[]
+}
+
+model Product {
+  productID     Int      @id @default(autoincrement())
+  productName   String   @db.VarChar(255)
+  description   String?  @db.VarChar(255)
+  price         Decimal  @db.Decimal(10, 2)
+  stockQuantity Int      @default(0)
+  createAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime @updatedAt @db.Timestamp(0)
+
+  categoryID Int
+  category   Category @relation(fields: [categoryID], references: [categoryID], onDelete: Cascade)
+  userID     Int?
+  User       User?    @relation(fields: [userID], references: [userID], onDelete: Cascade) //FK of Product
+
+  ProductOnCart  ProductOnCart[]
+  ProductOnOrder ProductOnOrder[]
+  productImage   productImage[] //Many images
+  ReviewPosts    ReviewPost[]
+}
+
+model productImage {
+  imageID      Int      @id @default(autoincrement())
+  public_id    String?  @db.VarChar(255)
+  productImage String   @db.VarChar(255)
+  createAt     DateTime @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime @updatedAt @db.Timestamp(0)
+  productID    Int
+  product      Product  @relation(fields: [productID], references: [productID], onDelete: Cascade) //FK of images
+}
+
+model ProductOnCart {
+  productID Int
+  product   Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+  cartID    Int
+  cart      Cart    @relation(fields: [cartID], references: [cartID], onDelete: Cascade)
+
+  quantity Int @default(0)
+
+  @@id([productID, cartID])
+}
+
+model Cart {
+  cartID     Int  @id @default(autoincrement())
+  customerID Int
+  customer   User @relation(fields: [customerID], references: [userID], onDelete: Cascade)
+
+  totalPrice Decimal @db.Decimal(10, 2)
+
+  ProductOnCart ProductOnCart[]
+}
+
+///// User --> Order
+model Order {
+  orderID       Int           @id @default(autoincrement())
+  customerID    Int
+  customer      User          @relation(fields: [customerID], references: [userID], onDelete: Cascade)
+  totalPrice    Decimal       @db.Decimal(10, 2)
+  orderDate     DateTime      @default(now()) @db.Timestamp(0)
+  orderStatus   OrderStatus   @default(SENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  shippingName  String        @default("KEX") @db.VarChar(255)
+
+  ProductOnOrder ProductOnOrder[]
+}
+
+enum OrderStatus {
+  SENDING
+  CANCELLED
+  ARRIVED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+///// Order - Product
+model ProductOnOrder {
+  productID Int
+  product   Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+  orderID   Int
+  order     Order   @relation(fields: [orderID], references: [orderID], onDelete: Cascade)
+
+  quantity Int @default(0)
+
+  @@id([productID, orderID])
+}
+
+model ReviewPost {
+  customerID Int
+  customer   User    @relation(fields: [customerID], references: [userID], onDelete: Cascade)
+  productID  Int
+  product    Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+  ratingID   Int
+  rating     Rating  @relation(fields: [ratingID], references: [ratingID], onDelete: Cascade)
+
+  content String @db.VarChar(255)
+
+  @@id([customerID, productID])
+}
+
+model Rating {
+  ratingID    Int          @id @default(autoincrement())
+  rating      Decimal      @db.Decimal(2, 1)
+  ReviewPosts ReviewPost[]
+}
