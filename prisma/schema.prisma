@@ -46,6 +46,8 @@ model User {
   Carts       Cart[]
   Orders      Order[]
   ReviewPosts ReviewPost[]
+
+  @@map("user")
 }
 
 model Category {
@@ -53,6 +55,8 @@ model Category {
   name       String @db.VarChar(255)
 
   products Product[]
+
+  @@map("category")
 }
 
 model Product {
@@ -73,6 +77,8 @@ model Product {
   ProductOnOrder ProductOnOrder[]
   productImage   productImage[] //Many images
   ReviewPosts    ReviewPost[]
+
+  @@map("product")
 }
 
 model productImage {
@@ -83,6 +89,8 @@ model productImage {
   updatedAt    DateTime @updatedAt @db.Timestamp(0)
   productID    Int
   product      Product  @relation(fields: [productID], references: [productID], onDelete: Cascade) //FK of images
+
+  @@map("productimage")
 }
 
 model ProductOnCart {
@@ -94,6 +102,7 @@ model ProductOnCart {
   quantity Int @default(0)
 
   @@id([productID, cartID])
+  @@map("productoncart")
 }
 
 model Cart {
@@ -104,6 +113,8 @@ model Cart {
   totalPrice Decimal @db.Decimal(10, 2)
 
   ProductOnCart ProductOnCart[]
+
+  @@map("cart")
 }
 
 ///// User --> Order
@@ -118,17 +129,23 @@ model Order {
   shippingName  String        @default("KEX") @db.VarChar(255)
 
   ProductOnOrder ProductOnOrder[]
+
+  @@map("order")
 }
 
 enum OrderStatus {
   SENDING
   CANCELLED
   ARRIVED
+
+  @@map("orderstatus")
 }
 
 enum PaymentStatus {
   PAID
   UNPAID
+
+  @@map("paymentstatus")
 }
 
 ///// Order - Product
@@ -141,6 +158,7 @@ model ProductOnOrder {
   quantity Int @default(0)
 
   @@id([productID, orderID])
+  @@map("productonorder")
 }
 
 model ReviewPost {
@@ -154,10 +172,13 @@ model ReviewPost {
   content String @db.VarChar(255)
 
   @@id([customerID, productID])
+  @@map("reviewpost")
 }
 
 model Rating {
   ratingID    Int          @id @default(autoincrement())
   rating      Decimal      @db.Decimal(2, 1)
   ReviewPosts ReviewPost[]
+
+  @@map("rating")
 }
