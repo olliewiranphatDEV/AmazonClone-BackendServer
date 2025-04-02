@@ -22,6 +22,12 @@ if (process.env.CA_PEM_B64) {
 }
 
 
+app.get("/", (req, res) => {
+    res.send("API is working! 🎉");
+});
+
+
+
 ///// Middlewares :
 app.use(clerkMiddleware()) //req.auth
 ///// Connect Frontend - Backend :
