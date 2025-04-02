@@ -29,13 +29,22 @@ app.get("/", (req, res) => {
 
 ///// Middlewares :
 ///// Connect Frontend - Backend :
+const allowedOrigins = [
+    'https://amazon-clone-frontend-web.vercel.app',
+    /\.vercel\.app$/ // ← รองรับทุก subdomain ที่ลงท้ายด้วย .vercel.app
+];
+
 app.use(cors({
-    origin: [
-        'https://amazon-clone-frontend-web.vercel.app',
-        'https://amazon-clone-frontend-gbhwaxpow-wiranphat-pattaramools-projects.vercel.app'
-    ],
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin))) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
+
 
 // ✅ แล้วค่อย options handler (สำหรับ preflight)
 app.options('*', cors());
