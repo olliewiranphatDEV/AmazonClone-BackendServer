@@ -29,17 +29,18 @@ app.get("/", (req, res) => {
 
 
 ///// Middlewares :
-app.use(clerkMiddleware()) //req.auth
 ///// Connect Frontend - Backend :
 ///// Connect Frontend - Backend :
-app.use(cors({
+app.options('*', cors({
     origin: [
         'https://amazon-clone-frontend-web.vercel.app',
-        'https://amazon-clone-frontend-gbhwaxpow-wiranphat-pattaramools-projects.vercel.app' // <- ใส่ตัวนี้เพิ่ม
+        'https://amazon-clone-frontend-gbhwaxpow-wiranphat-pattaramools-projects.vercel.app'
     ],
     credentials: true
-}))
+}));
 
+
+app.use(clerkMiddleware()) //req.auth
 ///// Read JSON req.body from Frontend :
 app.use(express.json({ limit: "10mb" })) //Max Payload size Server can receive
 app.use(morgan('dev'))
