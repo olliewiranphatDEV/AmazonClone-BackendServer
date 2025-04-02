@@ -30,6 +30,7 @@ app.get("/", (req, res) => {
 ///// Middlewares :
 ///// Connect Frontend - Backend :
 const allowedOrigins = [
+    'http://localhost:5173',
     'https://amazon-clone-frontend-web.vercel.app',
     /\.vercel\.app$/ // ← รองรับทุก subdomain ที่ลงท้ายด้วย .vercel.app
 ];

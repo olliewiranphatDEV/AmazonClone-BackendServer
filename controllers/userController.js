@@ -176,9 +176,29 @@ exports.ADDtoCart = TryCatch(async (req, res) => {
     console.log('totalPriceItem', totalPriceItem);
     const totalPriceUserID = totalPriceItem.reduce((acc, crr) => acc + crr, 0)
     console.log('totalPriceUserID', totalPriceUserID);
+
+    // เช็กว่า user มีอยู่ไหม
+    const existingUser = await prisma.user.findUnique({
+        where: { userID: parseInt(userID) }
+    })
+    if (!existingUser) {
+        const newUser = await prisma.user.create({
+            data: { clerkID: req.user.id }
+        })
+    }
+
+    // เช็กว่า product มีอยู่ไหม
+    const existingProduct = await prisma.product.findUnique({
+        where: { productID: cart[0].productID }
+    })
+    if (!existingProduct) {
+        return res.status(400).json({ message: 'Product does not exist!' });
+    }
+
+
     const results = await prisma.cart.create({
         data: {
-            customerID: parseInt(userID),
+            customerID: parseInt(userID) || newUser.userID,
             totalPrice: totalPriceUserID,
             ProductOnCart: {
                 create: cart.map(item => ({
