@@ -33,7 +33,10 @@ app.use(clerkMiddleware()) //req.auth
 ///// Connect Frontend - Backend :
 ///// Connect Frontend - Backend :
 app.use(cors({
-    origin: 'https://amazon-clone-frontend-web.vercel.app',
+    origin: [
+        'https://amazon-clone-frontend-web.vercel.app',
+        'https://amazon-clone-frontend-gbhwaxpow-wiranphat-pattaramools-projects.vercel.app' // <- ใส่ตัวนี้เพิ่ม
+    ],
     credentials: true
 }))
 
