@@ -11,7 +11,6 @@ const userRouter = require('./router/userRouter')
 const sellerRouter = require('./router/sellerRouter')
 const adminRouter = require('./router/adminRouter')
 const categoryRouter = require('./router/categoryRouter')
-const { clerkMiddleware } = require('@clerk/express')
 const fs = require('fs')
 
 if (process.env.CA_PEM_B64) {
@@ -30,8 +29,7 @@ app.get("/", (req, res) => {
 
 ///// Middlewares :
 ///// Connect Frontend - Backend :
-///// Connect Frontend - Backend :
-app.options('*', cors({
+app.use(cors({
     origin: [
         'https://amazon-clone-frontend-web.vercel.app',
         'https://amazon-clone-frontend-gbhwaxpow-wiranphat-pattaramools-projects.vercel.app'
@@ -39,7 +37,11 @@ app.options('*', cors({
     credentials: true
 }));
 
+// ✅ แล้วค่อย options handler (สำหรับ preflight)
+app.options('*', cors());
 
+
+const { clerkMiddleware } = require('@clerk/express')
 app.use(clerkMiddleware()) //req.auth
 ///// Read JSON req.body from Frontend :
 app.use(express.json({ limit: "10mb" })) //Max Payload size Server can receive
