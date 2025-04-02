@@ -29,15 +29,16 @@ app.get("/", (req, res) => {
 
 ///// Middlewares :
 ///// Connect Frontend - Backend :
-const allowedOrigins = [
-    'http://localhost:5173',
-    'https://amazon-clone-frontend-web.vercel.app',
-    /\.vercel\.app$/ // ← รองรับทุก subdomain ที่ลงท้ายด้วย .vercel.app
-];
-
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin))) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'https://amazon-clone-frontend-web.vercel.app'
+        ];
+
+        const isAllowed = allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin);
+
+        if (!origin || isAllowed) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
@@ -45,6 +46,7 @@ app.use(cors({
     },
     credentials: true
 }));
+
 
 
 // ✅ แล้วค่อย options handler (สำหรับ preflight)
