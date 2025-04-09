@@ -80,12 +80,26 @@ exports.userSignin = TryCatch(async (req, res) => {
 
 //////////////// Use Clerk !!! /////////////
 exports.userMyAccount = TryCatch(async (req, res) => {
-    const { id } = req.user
-    console.log('id', id);
+    console.log('req.user', req.user.emailAddresses[0].emailAddress);
+
     ///// Find User:
-    const results = await prisma.user.findFirst({ where: { clerkID: id } })
-    !results && createError(404, "Nu have this USER")
-    res.status(200).json({ status: "SUCCESS", message: "Get My Account already!", results })
+    let results = await prisma.user.findUnique({ where: { clerkID: req.user.id } })
+    if (!results) {
+        results = await prisma.user.create({
+            data: {
+                clerkID: req.user.id,
+                role: req.user.publicMetadata?.role || "CUSTOMER",
+                firstName: req.user.firstName || "",
+                lastName: req.user.lastName || "",
+                imageUrl: req.user.imageUrl || "",
+                email: req.user.emailAddresses[0]?.emailAddress || "",
+                phoneNumber: req.user.phoneNumbers[0]?.phoneNumber || ""
+            }
+        })
+    }
+    console.log('results', results);
+
+    res.status(200).json({ message: "SUCCESS, Get My Account already!", results })
 })
 
 

@@ -28,8 +28,8 @@ model User {
   userID       Int       @id @default(autoincrement())
   clerkID      String    @unique
   role         Role      @default(CUSTOMER)
-  firstName    String    @db.VarChar(255)
-  lastName     String    @db.VarChar(255)
+  firstName    String?   @db.VarChar(255)
+  lastName     String?   @db.VarChar(255)
   email        String?   @unique
   phoneNumber  String?   @unique
   address      String?   @db.VarChar(255)
@@ -42,10 +42,10 @@ model User {
   merchantName String?   @unique @db.VarChar(255)
   sellerStatus Status    @default(ACTIVE)
 
-  products    Product[] //Many products
-  Carts       Cart[]
-  Orders      Order[]
-  ReviewPosts ReviewPost[]
+  Order      Order[]
+  ReviewPost ReviewPost[]
+  Product    Product[]
+  Cart       Cart[]
 
   @@map("user")
 }
@@ -54,7 +54,7 @@ model Category {
   categoryID Int    @id @default(autoincrement())
   name       String @db.VarChar(255)
 
-  products Product[]
+  product Product[]
 
   @@map("category")
 }
@@ -70,13 +70,13 @@ model Product {
 
   categoryID Int
   category   Category @relation(fields: [categoryID], references: [categoryID], onDelete: Cascade)
-  userID     Int?
-  User       User?    @relation(fields: [userID], references: [userID], onDelete: Cascade) //FK of Product
+  hostID     String
+  host       User     @relation(fields: [hostID], references: [clerkID], onDelete: Cascade)
 
   ProductOnCart  ProductOnCart[]
   ProductOnOrder ProductOnOrder[]
   productImage   productImage[] //Many images
-  ReviewPosts    ReviewPost[]
+  ReviewPost     ReviewPost[]
 
   @@map("product")
 }
@@ -106,9 +106,9 @@ model ProductOnCart {
 }
 
 model Cart {
-  cartID     Int  @id @default(autoincrement())
-  customerID Int
-  customer   User @relation(fields: [customerID], references: [userID], onDelete: Cascade)
+  cartID     Int    @id @default(autoincrement())
+  customerID String
+  customer   User   @relation(fields: [customerID], references: [clerkID], onDelete: Cascade)
 
   totalPrice Decimal @db.Decimal(10, 2)
 
@@ -120,8 +120,8 @@ model Cart {
 ///// User --> Order
 model Order {
   orderID       Int           @id @default(autoincrement())
-  customerID    Int
-  customer      User          @relation(fields: [customerID], references: [userID], onDelete: Cascade)
+  customerID    String
+  customer      User          @relation(fields: [customerID], references: [clerkID], onDelete: Cascade)
   totalPrice    Decimal       @db.Decimal(10, 2)
   orderDate     DateTime      @default(now()) @db.Timestamp(0)
   orderStatus   OrderStatus   @default(SENDING)
@@ -162,8 +162,8 @@ model ProductOnOrder {
 }
 
 model ReviewPost {
-  customerID Int
-  customer   User    @relation(fields: [customerID], references: [userID], onDelete: Cascade)
+  customerID String
+  customer   User    @relation(fields: [customerID], references: [clerkID], onDelete: Cascade)
   productID  Int
   product    Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
   ratingID   Int
