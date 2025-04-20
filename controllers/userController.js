@@ -80,7 +80,7 @@ exports.userSignin = TryCatch(async (req, res) => {
 
 //////////////// Use Clerk !!! /////////////
 exports.userMyAccount = TryCatch(async (req, res) => {
-    console.log('req.user', req.user.emailAddresses[0].emailAddress);
+    // console.log('req.user', req.user.emailAddresses[0].emailAddress);
 
     ///// Find User:
     let results = await prisma.user.findUnique({ where: { clerkID: req.user.id } })
@@ -97,7 +97,7 @@ exports.userMyAccount = TryCatch(async (req, res) => {
             }
         })
     }
-    console.log('results', results);
+    // console.log('results', results);
 
     res.status(200).json({ message: "SUCCESS, Get My Account already!", results })
 })
@@ -117,9 +117,11 @@ exports.userCreateUpdateDB = TryCatch(async (req, res) => {
     const { id } = req.user
     // console.log('req.user.id', id);
     ///// Add role in User data CLERK names Key  publicMetadata
-    await clerkClient.users.updateUserMetadata(id, {
-        publicMetadata: { role } // role: value of role from req.body
-    })
+    if (req.body.role) {
+        await clerkClient.users.updateUserMetadata(id, {
+            publicMetadata: { role } // role: value of role from req.body
+        })
+    }
 
     const results = await prisma.user.upsert({
         where: { clerkID: id },

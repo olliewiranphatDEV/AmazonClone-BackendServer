@@ -26,15 +26,21 @@ exports.getAllCategories = TryCatch(async (req, res) => {
 
 exports.updateCategory = TryCatch(async (req, res) => {
     console.log('req.body', req.body);
-    // const result = await prisma.category.update({
-    //     where: { categoryID: parseInt(req.params.categoryID) },
-    //     data: req.body
-    // })
-    res.status(200).json({ status: "SUCCESS", message: "Update Category already" })
+    const result = await prisma.category.update({
+        where: { categoryID: parseInt(req.params.categoryID) },
+        data: {
+            name: req.body.name
+        }
+    })
+    res.status(200).json({ status: "SUCCESS", message: "Update Category already", result })
 })
 
 exports.deleteCategory = TryCatch(async (req, res) => {
     console.log('req.params', req.params);
-    const results = await prisma.category.delete({ where: { categoryID: Number(req.params.categoryID) } })
-    res.status(200).json({ status: "SUCCESS", message: "Delete Category already", results })
+    await prisma.category.delete({
+        where: {
+            categoryID: parseInt(req.params.categoryID)
+        }
+    })
+    res.status(200).json({ status: "SUCCESS", message: "Delete Category already" })
 })

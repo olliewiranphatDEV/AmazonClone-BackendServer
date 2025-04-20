@@ -46,8 +46,22 @@ model User {
   ReviewPost ReviewPost[]
   Product    Product[]
   Cart       Cart[]
+  Viewed     Viewed[]
 
   @@map("user")
+}
+
+model Viewed {
+  viewedID   Int     @id @default(autoincrement())
+  customerID String
+  customer   User    @relation(fields: [customerID], references: [clerkID], onDelete: Cascade)
+  productID  Int
+  product    Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  @@map("viewed")
 }
 
 model Category {
@@ -70,25 +84,26 @@ model Product {
 
   categoryID Int
   category   Category @relation(fields: [categoryID], references: [categoryID], onDelete: Cascade)
-  hostID     String
-  host       User     @relation(fields: [hostID], references: [clerkID], onDelete: Cascade)
+  sellerID   String
+  seller     User     @relation(fields: [sellerID], references: [clerkID], onDelete: Cascade)
 
   ProductOnCart  ProductOnCart[]
   ProductOnOrder ProductOnOrder[]
-  productImage   productImage[] //Many images
+  ProductImage   ProductImage[] //Many images
   ReviewPost     ReviewPost[]
+  Viewed         Viewed[]
 
   @@map("product")
 }
 
-model productImage {
-  imageID      Int      @id @default(autoincrement())
-  public_id    String?  @db.VarChar(255)
-  productImage String   @db.VarChar(255)
-  createAt     DateTime @default(now()) @db.Timestamp(0)
-  updatedAt    DateTime @updatedAt @db.Timestamp(0)
-  productID    Int
-  product      Product  @relation(fields: [productID], references: [productID], onDelete: Cascade) //FK of images
+model ProductImage {
+  imageID    Int      @id @default(autoincrement())
+  public_id  String?  @db.VarChar(255)
+  secure_url String   @db.VarChar(255)
+  createAt   DateTime @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt @db.Timestamp(0)
+  productID  Int
+  product    Product  @relation(fields: [productID], references: [productID], onDelete: Cascade) //FK of images
 
   @@map("productimage")
 }

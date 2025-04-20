@@ -1,20 +1,64 @@
 const createError = require("../utils/createError");
 const TryCatch = require("../utils/TryCatch");
-const prisma = require('../models/index')
+const prisma = require('../models/index');
+const { clerkClient } = require("@clerk/express");
+
+exports.switchToSeller = TryCatch(async (req, res) => {
+    console.log('req.user', req.user);
+
+    if (req.body.role !== "SELLER") {
+        return createError(400, "Bad request!, no have SELLER ROLE")
+    }
+    await clerkClient.users.updateUserMetadata(req.user.id, {
+        publicMetadata: { role: req.body.role }
+    })
 
 
+    const result = await prisma.user.upsert({
+        where: { clerkID: req.user.id },
+        create: {
+            clerkID: req.user.id,
+            role: req.body.role,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName,
+            email: req.user.emailAddresses[0].emailAddress
+        },
+        update: {
+            role: req.body.role
+        }
+    })
+
+    res.status(200).json({ message: "SUCESS, Switch to SELLER!!", result })
+})
+
+exports.editMerchantName = TryCatch(async (req, res) => {
+    console.log('req.body', req.body);
+
+    const results = await prisma.user.update({
+        where: {
+            clerkID: req.user.id
+        },
+        data: {
+            merchantName: req.body.merchantName
+        }
+    })
+    console.log('results', results);
+
+    res.status(200).json({ message: "SUCESS! Edit Merchant Name already", results })
+})
 
 
 ///// API Get All-Products : http://localhost:8080/seller-center/products/all-products/${userID}, token
 /// MerchantData = SellerData (req.user) + productSeller (Product Table - SellerID in DB)
 exports.getMyProducts = TryCatch(async (req, res) => {
-    const { userID } = req.params
-    // console.log('userID', userID);
+    // console.log('req.user', req.user);
     const results = await prisma.product.findMany({
-        where: { userID: Number(userID) },
-        include: { productImage: true }
+        where: { sellerID: req.user.id },
+        include: {
+            ProductImage: true
+        }
     })
-    console.log('results', results);
+    // console.log('results', results);
 
     res.status(200).json({ message: "SUCESS! Get all products!", results })
 })
@@ -23,35 +67,53 @@ exports.getMyProducts = TryCatch(async (req, res) => {
 
 ///// API Seller ADD Product : /seller-center/add-product
 exports.sellerADDProduct = TryCatch(async (req, res) => { //Only SELLER get to this path
-    console.log("clerkID", req.user.id);
-    ///// Get userID in DB where clerkID :
-    const userDataDB = await prisma.user.findFirst({ where: { clerkID: req.user.id } })
-    console.log('userDataDB >>>', userDataDB);
-    !userDataDB && createError(400, "Not found this user")
-    ///// get userID to add in Product Table :
-    const { userID } = userDataDB
-    console.log('userID >>>', userID);
-
     const { value, imageData } = req.body
+    console.log('value', value);
     console.log('imageData', imageData); //[]
+    if (!value || !imageData) {
+        return createError("400", "The data do not compelete!")
+    }
+    ///// VALIDATE HAVE THIS USER?? in DB :
+    const userDataDB = await prisma.user.findUnique({
+        where: {
+            clerkID: req.user.id
+        }
+    })
+    // console.log('userDataDB >>>', userDataDB);
+    if (!userDataDB) {
+        return createError(404, "Not found this user")
+    }
 
-    // console.log('value >>>', value); //for keep in Product
-    ///// Add Product in DB :
+    ///// Add productData in DB :
     const productData = await prisma.product.create({
-        data: { userID, ...value, categoryID: Number(value.categoryID), price: Number(value.price), stockQuantity: Number(value.stockQuantity) }
+        data: {
+            sellerID: userDataDB.clerkID,
+            productName: value.productName,
+            description: value.description,
+            categoryID: parseInt(value.categoryID),
+            price: parseFloat(value.price),
+            stockQuantity: parseInt(value.stockQuantity),
+            ProductImage: {
+                createMany: {
+                    data: imageData.map(({ secure_url, public_id }) => (
+                        {
+                            secure_url,
+                            public_id,
+                        }
+                    ))
+                }
+            }
+        },
+        include: {
+            ProductImage: true
+        }
     })
-    console.log('productData >>>', productData);
-    ///// get ProductID where ProductName: to add ProductImage in DB, using productID
-    const productDB = await prisma.product.findFirst({ where: { productID: parseInt(productData.productID) } })
 
-    ///// Add ImageProduct into DB:
-    const productImages = await prisma.productImage.createMany({
-        data: imageData.map(({ secure_url, public_id }) => {
-            return { productID: productDB.productID, productImage: secure_url, public_id }
-        })
-    })
-    console.log('productImages', productImages);
-    res.status(200).json({ status: "SUCCESS", message: "Add product already!", results: { ...productData, ...productImages } })
+    console.log('productData', productData);
+
+
+
+    res.status(200).json({ status: "SUCCESS", message: "Add product already!" })
 })
 
 exports.sellerUPDATEProduct = TryCatch(async (req, res) => {
@@ -67,35 +129,42 @@ exports.sellerUPDATEProduct = TryCatch(async (req, res) => {
     }
 
     // Step 1: Update Product Details (excluding images)
-    const updatedProduct = await prisma.product.update({
+    const updatedProductInfo = await prisma.product.update({
         where: { productID: parseInt(req.params.productID) },
         data: {
             ...value,
             categoryID: parseInt(value.categoryID),
-            price: parseInt(value.price),
+            price: parseFloat(value.price),
             stockQuantity: parseInt(value.stockQuantity)
         }
     });
 
-    console.log('Updated Product:', updatedProduct);
+    console.log('Updated Product:', updatedProductInfo);
 
     // Step 2: Handle Image Updates
     if (imageData && imageData.length > 0) {
+
         // Option 1: Delete old images before inserting new ones (Recommended if replacing all images)
-        await prisma.productImage.deleteMany({ where: { productID: parseInt(req.params.productID) } });
+        await prisma.productImage.deleteMany({
+            where: {
+                productID: parseInt(req.params.productID)
+            }
+        });
 
         // Insert new images
-        const UpdateImages = await prisma.productImage.createMany({
+        const updateProductImages = await prisma.productImage.createMany({
             data: imageData.map(el => ({
-                productID: parseInt(req.params.productID),
-                productImage: el.secure_url || el.productImage,
+                productID: updatedProductInfo.productID,
+                secure_url: el.secure_url,
                 public_id: el.public_id
             }))
         });
-        console.log('Images replaced successfully.', UpdateImages);
+        console.log('Images replaced successfully.', updateProductImages);
     }
     res.status(200).json({ status: "SUCCESS", message: "Product updated successfully!" });
 });
+
+
 
 exports.sellerDELETEProduct = TryCatch(async (req, res) => {
     console.log(' req.param', req.params);
