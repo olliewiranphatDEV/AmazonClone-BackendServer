@@ -19,7 +19,11 @@ exports.addCategory = TryCatch(async (req, res) => {
 })
 
 exports.getAllCategories = TryCatch(async (req, res) => {
-    const allCategories = await prisma.category.findMany()
+    const allCategories = await prisma.category.findMany({
+        orderBy: {
+            name: "asc"
+        }
+    })
     console.log('allCategories >>>', allCategories);
     res.status(200).json({ message: "SUCCESS Get All Categories", results: allCategories })
 })

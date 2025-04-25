@@ -2,7 +2,7 @@ const express = require('express')
 const userRouter = express.Router()
 const authorization = require('../middlewares/authorization')
 
-const { userRegister, userSignin, userOrderHistory, userCart, deleteUser, userCreateUpdateDB, ADDtoCart, userMyAccount, OrderProducts, updateQuantity, paymentCheckout, paymentStatus, updateImageAccount } = require('../controllers/userController')
+const { userRegister, userSignin, userOrderHistory, userCart, deleteUser, userCreateUpdateDB, ADDtoCart, userMyAccount, OrderProducts, updateQuantity, paymentCheckout, paymentStatus, updateImageAccount, deleteAllCartItem } = require('../controllers/userController')
 const { searchProducts, orderPayment } = require('../controllers/productController')
 const { addImageCloud } = require('../controllers/imageController')
 
@@ -23,9 +23,10 @@ userRouter.put('/update-account', authorization, userCreateUpdateDB) //Create/Up
 userRouter.patch('/update-image-account', authorization, updateImageAccount) //Update imageUrl in DB
 userRouter.post('/add-images-cloud', authorization, addImageCloud) //Cloudinary Storage : Keep Images
 userRouter.delete('/delete-account', authorization, deleteUser)
-userRouter.post('/add-to-cart/:userID', authorization, ADDtoCart)
-userRouter.get('/cart/:userID', authorization, userCart)
-userRouter.patch('/cart/update-quantity/:userID', authorization, updateQuantity) //Ready to ORDER, link to Payment Checkout
+userRouter.post('/add-to-cart', authorization, ADDtoCart)
+userRouter.get('/cart', authorization, userCart)
+userRouter.get('/cart/delete-all-cart-items', authorization, deleteAllCartItem)
+userRouter.patch('/cart/update-quantity', authorization, updateQuantity) //Ready to ORDER, link to Payment Checkout
 
 
 ///// Payment: 

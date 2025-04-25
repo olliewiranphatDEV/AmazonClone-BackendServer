@@ -167,60 +167,63 @@ exports.deleteUser = TryCatch(async (req, res) => {
 
 ///// API Access Cart USER after Login : JOIN User, ProductOnCart
 exports.ADDtoCart = TryCatch(async (req, res) => {
-    const { userID } = req.params
-    console.log('userID', userID);
     // console.log('req.body', req.body);
     const { cart } = req.body
     console.log('cart', cart);
 
-    const thisCart = await prisma.cart.findFirst({
-        where: { customerID: parseInt(userID) }
-    })
-    console.log('thisCart', thisCart);
-    if (thisCart) {
-        await prisma.productOnCart.deleteMany({
-            where: { cartID: thisCart.cartID }
-        })
-        await prisma.cart.deleteMany({
-            where: { customerID: parseInt(userID) }
-        })
-    }
-
-    const totalPriceItem = cart.map(el => {
-        return el.price * el.quantity
-    })
+    const totalPriceItem = cart.price * cart.selectedQuantity
     console.log('totalPriceItem', totalPriceItem);
-    const totalPriceUserID = totalPriceItem.reduce((acc, crr) => acc + crr, 0)
-    console.log('totalPriceUserID', totalPriceUserID);
+
 
     // เช็กว่า user มีอยู่ไหม
     const existingUser = await prisma.user.findUnique({
-        where: { userID: parseInt(userID) }
+        where: { clerkID: req.user.id }
     })
+    let newUser = null
     if (!existingUser) {
-        const newUser = await prisma.user.create({
+        newUser = await prisma.user.create({
             data: { clerkID: req.user.id }
         })
     }
 
     // เช็กว่า product มีอยู่ไหม
     const existingProduct = await prisma.product.findUnique({
-        where: { productID: cart[0].productID }
+        where: { productID: cart.productID }
     })
     if (!existingProduct) {
         return res.status(400).json({ message: 'Product does not exist!' });
     }
 
+    const thisCart = await prisma.productOnCart.findFirst({
+        where: {
+            productID: cart.productID,
+            cart: {
+                customerID: req.user.id
+            }
+        }
+    })
+    console.log('thisCart', thisCart);
+
+    if (thisCart) {
+        await prisma.cart.delete({
+            where: {
+                cartID: thisCart.cartID
+            }
+        })
+    }
+
 
     const results = await prisma.cart.create({
         data: {
-            customerID: parseInt(userID) || newUser.userID,
-            totalPrice: totalPriceUserID,
+            customerID: req.user.id || newUser.clerkID,
+            totalPrice: totalPriceItem,
             ProductOnCart: {
-                create: cart.map(item => ({
-                    productID: parseInt(item.productID),
-                    quantity: parseInt(item.quantity)
-                }))
+                create: [
+                    {
+                        productID: cart.productID,
+                        quantity: cart.selectedQuantity
+                    }
+                ]
             }
         }
 
@@ -233,16 +236,17 @@ exports.ADDtoCart = TryCatch(async (req, res) => {
 
 ///// API Access Cart USER after Login : JOIN User, ProductOnCart
 exports.userCart = TryCatch(async (req, res) => {
-    const { userID } = req.params
-    console.log('userID >>', userID); //8
-    const results = await prisma.cart.findFirst({
-        where: { customerID: parseInt(userID) },
+
+    const results = await prisma.cart.findMany({
+        where: {
+            customerID: req.user.id
+        },
         include: {
             ProductOnCart: {
                 include: {
                     product: {
                         include: {
-                            productImage: true
+                            ProductImage: true
                         }
                     }
                 }
@@ -250,99 +254,103 @@ exports.userCart = TryCatch(async (req, res) => {
         },
     });
     console.log('results', results);
-    !results && createError(404, `No have Cart Data for this User ${userID}`)
+    !results && createError(404, `No have Cart Data for this User`)
 
     res.status(200).json({ status: "SUCCESS", message: "Access Cart already!", results }) //Send Cart data back
 
 })
 
-exports.updateQuantity = TryCatch(async (req, res) => {
-    const { userID } = req.params
-    console.log('userID', userID);
-    console.log(req.body);
-    const { cartID, productID, quantity } = req.body
-    await prisma.productOnCart.updateMany({
-        where: { cartID: parseInt(cartID), productID: parseInt(productID) },
-        data: { quantity: parseInt(quantity) } //Upadate Quantity of this product on cart  
+
+exports.deleteAllCartItem = TryCatch(async (req, res) => {
+    const findUserOnCart = await prisma.cart.findMany({
+        where: {
+            customerID: req.user.id
+        }
+    })
+    console.log('findUserOnCart', findUserOnCart);
+
+    if (!findUserOnCart || findUserOnCart.length === 0) {
+        return createError(404, "Not found this user on cart")
+    }
+
+    //DELETE ALL CART ITEMS OF THIS USER
+    await prisma.cart.deleteMany({
+        where: {
+            customerID: req.user.id
+        }
     })
 
-    /////Get userCart: 
-    const results = await prisma.cart.findFirst({
-        where: { customerID: parseInt(userID) },
-        include: {
-            ProductOnCart: {
-                include: {
-                    product: {
-                        include: {
-                            productImage: true
-                        }
-                    }
-                }
-            }
-        },
-    });
-    console.log('results', results);
-
-    const totalPriceItem = results.ProductOnCart.map(el => {
-        // console.log('el', el);
-
-        return el.product.price * el.quantity
-    })
-    // console.log('totalPriceItem', totalPriceItem);
-    const totalPriceUserID = totalPriceItem.reduce((acc, crr) => acc + crr, 0)
-    console.log('totalPriceUserID', totalPriceUserID);
-    const updateTotalPriceCartID = await prisma.cart.update({
-        where: { cartID: parseInt(cartID) },
-        data: { totalPrice: totalPriceUserID }
-    })
-    console.log('updateTotalPriceCartID', updateTotalPriceCartID);
-
-    res.status(200).json({ status: "SUCCESS", message: "Access Cart already!" }) //Send Cart data back
-
+    res.status.json({ message: "SUCCESS!, Delete All userCart" })
 })
+
+exports.updateQuantity = TryCatch(async (req, res) => {
+    const { cartID, productID, updatedQTY } = req.body
+    console.log("Incoming update:", { cartID, productID, updatedQTY });
+
+    // 1. อัปเดต quantity ในตาราง ProductOnCart
+    await prisma.productOnCart.updateMany({
+        where: {
+            cartID: cartID,
+            productID: productID
+        },
+        data: {
+            quantity: parseInt(updatedQTY)
+        }
+    })
+
+    // 2. ดึง product.price มาคำนวณราคารวมใหม่
+    const product = await prisma.product.findUnique({
+        where: { productID }
+    })
+
+    const updatedTotalPrice = parseFloat(product.price) * parseInt(updatedQTY)
+
+    // 3. อัปเดต totalPrice ใน cart
+    await prisma.cart.update({
+        where: {
+            cartID
+        },
+        data: {
+            totalPrice: updatedTotalPrice
+        }
+    })
+
+    res.status(200).json({ status: "SUCCESS", message: "Quantity updated!" })
+})
+
 
 exports.paymentCheckout = TryCatch(async (req, res) => {
     // console.log('req.body >>>', req.body);
     const { userCart } = req.body
     console.log('userCart', userCart);
+    console.log('ProductOnCart', userCart.ProductOnCart);
 
     ///// Create ORDER in DB: before Create session to checkout form 
-    const order = await prisma.order.create({
-        data: {
-            ProductOnOrder: {
-                create: userCart.ProductOnCart.map(item => ({
-                    productID: item.productID,
-                    quantity: item.quantity
-                }))
-            },
-            customerID: userCart.customerID,
-            totalPrice: userCart.totalPrice
-        }
-    })
-    console.log('order', order);
+    const newOrder = await prisma.order.create
 
-    ///// Create Checkout Session and use session.id to open Checkout form, if success, link to PaymentComplete.jsx
-    const session = await stripe.checkout.sessions.create({
-        ui_mode: 'embedded',
-        metadata: { orderID: order.orderID },
-        line_items: [
-            {
-                // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-                quantity: 1,
-                price_data: {
-                    currency: "thb",
-                    product_data: {
-                        name: "HELLO"
-                    },
-                    unit_amount: order.totalPrice * 100
-                }
-            },
-        ],
-        mode: 'payment',
-        return_url: `http://localhost:5173/user/payment/complete/{CHECKOUT_SESSION_ID}`,//if success, link to PaymentComplete.jsx
-    });
+    // ///// Create Checkout Session and use session.id to open Checkout form, if success, link to PaymentComplete.jsx
+    // const session = await stripe.checkout.sessions.create({
+    //     ui_mode: 'embedded',
+    //     metadata: { orderID: order.orderID },
+    //     line_items: [
+    //         {
+    //             // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+    //             quantity: 1,
+    //             price_data: {
+    //                 currency: "thb",
+    //                 product_data: {
+    //                     name: "HELLO"
+    //                 },
+    //                 unit_amount: order.totalPrice * 100
+    //             }
+    //         },
+    //     ],
+    //     mode: 'payment',
+    //     return_url: `http://localhost:5173/user/payment/complete/{CHECKOUT_SESSION_ID}`,//if success, link to PaymentComplete.jsx
+    // });
 
-    res.send({ clientSecret: session.client_secret });
+    // res.send({ clientSecret: session.client_secret });
+    res.send("Payment")
 })
 
 //// JUST UPDATE STATUS inBD: when payment complete
