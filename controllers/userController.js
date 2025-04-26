@@ -320,38 +320,75 @@ exports.updateQuantity = TryCatch(async (req, res) => {
 
 
 exports.paymentCheckout = TryCatch(async (req, res) => {
-    // console.log('req.body >>>', req.body);
-    const { userCart } = req.body
-    console.log('userCart', userCart);
-    console.log('ProductOnCart', userCart.ProductOnCart);
+    const { filteredCart, totalPriceCard } = req.body
+    console.log('filteredCart', filteredCart);
+    console.log('totalPriceCard', totalPriceCard);
 
-    ///// Create ORDER in DB: before Create session to checkout form 
-    const newOrder = await prisma.order.create
+    filteredCart.forEach(cart =>
+        cart.ProductOnCart.forEach(item => {
+            console.log("🧾 Product Name:", item.product?.productName)
+            console.log("🧾 Price:", item.product?.price)
+        })
+    )
 
-    // ///// Create Checkout Session and use session.id to open Checkout form, if success, link to PaymentComplete.jsx
-    // const session = await stripe.checkout.sessions.create({
-    //     ui_mode: 'embedded',
-    //     metadata: { orderID: order.orderID },
-    //     line_items: [
-    //         {
-    //             // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-    //             quantity: 1,
-    //             price_data: {
-    //                 currency: "thb",
-    //                 product_data: {
-    //                     name: "HELLO"
-    //                 },
-    //                 unit_amount: order.totalPrice * 100
-    //             }
-    //         },
-    //     ],
-    //     mode: 'payment',
-    //     return_url: `http://localhost:5173/user/payment/complete/{CHECKOUT_SESSION_ID}`,//if success, link to PaymentComplete.jsx
-    // });
+    const allProductOnOrder = filteredCart.flatMap(cartItem =>
+        cartItem.ProductOnCart.map(productItem => ({
+            productID: productItem.productID,
+            quantity: productItem.quantity,
+        }))
+    )
 
-    // res.send({ clientSecret: session.client_secret });
-    res.send("Payment")
+    if (!filteredCart || allProductOnOrder.length === 0) {
+        return res.status(400).json({ message: "No products selected for order" })
+    }
+
+    // 1. Create Order & ProductOnOrder
+    const newOrder = await prisma.order.create({
+        data: {
+            customerID: req.user.id,
+            totalPrice: parseFloat(totalPriceCard),
+            ProductOnOrder: {
+                createMany: {
+                    data: allProductOnOrder
+                }
+            }
+        }
+    })
+    console.log('newOrder', newOrder);
+
+
+    const line_items = filteredCart.flatMap(cartItem =>
+        cartItem.ProductOnCart.map(productItem => ({
+            quantity: productItem.quantity,
+            price_data: {
+                currency: "thb",
+                product_data: {
+                    name: productItem.product.productName
+                },
+                unit_amount: Math.round(parseFloat(productItem.product.price) * 100)
+            }
+        }))
+    )
+    console.log(
+        "✅ line_items to Stripe:",
+        JSON.stringify(line_items, null, 2)
+    )
+
+
+    // 2. Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+        ui_mode: 'embedded',
+        metadata: { orderID: newOrder.orderID },
+        line_items,
+        mode: 'payment',
+        return_url: `http://localhost:5173/user/payment/complete/{CHECKOUT_SESSION_ID}`
+    })
+
+
+    //3. ส่ง client_secret กลับให้ฝั่ง frontend ใช้
+    res.send({ clientSecret: session.client_secret })
 })
+
 
 //// JUST UPDATE STATUS inBD: when payment complete
 exports.paymentStatus = TryCatch(async (req, res) => {
