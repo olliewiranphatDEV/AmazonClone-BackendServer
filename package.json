@@ -4,7 +4,7 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "nodemon server.js",
+    "start": "npx prisma db push && nodemon server.js",
     "resetDB": "node prisma/resetDB.js"
   },
   "prisma": {
