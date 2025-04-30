@@ -25,7 +25,7 @@ exports.getAllProductsDB = TryCatch(async (req, res) => {
 })
 
 exports.getAllSellers = TryCatch(async (req, res) => {
-    ///// Get all products in DB:
+    ///// Get all products in DB
     const results = await prisma.user.findMany({ where: { role: "SELLER" } });
 
 
