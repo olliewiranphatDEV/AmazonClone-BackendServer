@@ -24,8 +24,9 @@ userRouter.patch('/update-image-account', authorization, updateImageAccount) //U
 userRouter.post('/add-images-cloud', authorization, addImageCloud) //Cloudinary Storage : Keep Images
 userRouter.delete('/delete-account', authorization, deleteUser)
 userRouter.post('/add-to-cart', authorization, ADDtoCart)
+
 userRouter.get('/cart', authorization, userCart)
-userRouter.get('/cart/delete-all-cart-items', authorization, deleteAllCartItem)
+userRouter.delete('/cart/delete-all-cart-items', authorization, deleteAllCartItem)
 userRouter.patch('/cart/update-quantity', authorization, updateQuantity) //Ready to ORDER, link to Payment Checkout
 
 

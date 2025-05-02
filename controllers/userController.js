@@ -280,7 +280,7 @@ exports.deleteAllCartItem = TryCatch(async (req, res) => {
         }
     })
 
-    res.status.json({ message: "SUCCESS!, Delete All userCart" })
+    res.status(200).json({ message: "SUCCESS!, Delete All userCart" })
 })
 
 exports.updateQuantity = TryCatch(async (req, res) => {
