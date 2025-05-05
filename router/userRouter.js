@@ -2,7 +2,7 @@ const express = require('express')
 const userRouter = express.Router()
 const authorization = require('../middlewares/authorization')
 
-const { userRegister, userSignin, userOrderHistory, userCart, deleteUser, userCreateUpdateDB, ADDtoCart, userMyAccount, OrderProducts, updateQuantity, paymentCheckout, paymentStatus, updateImageAccount, deleteAllCartItem } = require('../controllers/userController')
+const { userRegister, userSignin, userOrderHistory, userCart, deleteUser, userCreateUpdateDB, ADDtoCart, userMyAccount, OrderProducts, updateQuantity, paymentCheckout, paymentStatus, updateImageAccount, deleteAllCartItem, deleteCheckedItem } = require('../controllers/userController')
 const { searchProducts, orderPayment } = require('../controllers/productController')
 const { addImageCloud } = require('../controllers/imageController')
 
@@ -26,7 +26,7 @@ userRouter.delete('/delete-account', authorization, deleteUser)
 userRouter.post('/add-to-cart', authorization, ADDtoCart)
 
 userRouter.get('/cart', authorization, userCart)
-userRouter.delete('/cart/delete-all-cart-items', authorization, deleteAllCartItem)
+userRouter.delete('/cart/delete-checked', authorization, deleteCheckedItem)
 userRouter.patch('/cart/update-quantity', authorization, updateQuantity) //Ready to ORDER, link to Payment Checkout
 
 

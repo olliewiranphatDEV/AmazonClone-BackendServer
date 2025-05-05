@@ -261,27 +261,34 @@ exports.userCart = TryCatch(async (req, res) => {
 })
 
 
-exports.deleteAllCartItem = TryCatch(async (req, res) => {
-    const findUserOnCart = await prisma.cart.findMany({
-        where: {
-            customerID: req.user.id
-        }
-    })
-    console.log('findUserOnCart', findUserOnCart);
-
-    if (!findUserOnCart || findUserOnCart.length === 0) {
-        return createError(404, "Not found this user on cart")
+exports.deleteCheckedItem = TryCatch(async (req, res) => {
+    console.log('req.body', req.body);
+    const { selectedProductIDs } = req.body;
+    if (!selectedProductIDs || !Array.isArray(selectedProductIDs)) {
+        return res.status(400).json({ message: "Invalid product list." });
     }
 
-    //DELETE ALL CART ITEMS OF THIS USER
+    // ลบรายการสินค้าในตะกร้า
+    await prisma.productOnCart.deleteMany({
+        where: {
+            productID: {
+                in: selectedProductIDs
+            }
+        }
+    });
+
+    // ลบ cart ที่ไม่มีสินค้าเหลืออยู่
     await prisma.cart.deleteMany({
         where: {
-            customerID: req.user.id
+            ProductOnCart: {
+                none: {}
+            }
         }
-    })
+    });
 
-    res.status(200).json({ message: "SUCCESS!, Delete All userCart" })
-})
+    res.status(200).json({ message: "SUCCESS!, Deleted checked items and cleaned up empty carts." })
+});
+
 
 exports.updateQuantity = TryCatch(async (req, res) => {
     const { cartID, productID, updatedQTY } = req.body
