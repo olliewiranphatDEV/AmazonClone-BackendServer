@@ -29,7 +29,7 @@ exports.getAllCategories = TryCatch(async (req, res) => {
 })
 
 exports.updateCategory = TryCatch(async (req, res) => {
-    console.log('req.body', req.body);
+    // console.log('req.body', req.body);
     const result = await prisma.category.update({
         where: { categoryID: parseInt(req.params.categoryID) },
         data: {
