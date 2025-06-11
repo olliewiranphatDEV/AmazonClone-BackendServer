@@ -22,7 +22,7 @@ if (process.env.CA_PEM_B64) {
 
 
 app.get("/", (req, res) => {
-    res.send("API is working! 🎉");
+    res.send("API is working!");
 });
 
 
@@ -49,7 +49,7 @@ app.use(cors({
 
 
 
-// ✅ แล้วค่อย options handler (สำหรับ preflight)
+// แล้วค่อย options handler (สำหรับ preflight)
 app.options('*', cors());
 
 
